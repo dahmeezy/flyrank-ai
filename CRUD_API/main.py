@@ -105,23 +105,25 @@ async def updateTask(id:int, title:str|None=None, done:bool|None=None ):
                status_code=status.HTTP_404_NOT_FOUND,
                detail={"error": f"Task {id} not found"}
            )
-    elif title is not None and done is not None:
-         task["title"]=title
-         task["done"]=done
-    elif task is not None:
-         task["title"]=title
-    elif done is not None:
-        task["done"]=done
-    else:
+    if title is None and done is None:
         raise HTTPException(
              status_code=status.HTTP_400_BAD_REQUEST,
              detail={"error": f"Send a title update or status update for task {id}"}
         )
+    
+    if title is not None:
+         task["title"]=title
+
+    if done is not None:
+        task["done"] = done
+        
+    
+         
     save_tasks(tasks)
     return task
 
-@app.delete("/tasks/{id}")
-async def deleteTask(id:int,status_code=status.HTTP_204_NO_CONTENT):
+@app.delete("/tasks/{id}", status_code=status.HTTP_204_NO_CONTENT)
+async def deleteTask(id:int):
     tasks=load_tasks()
     task = next((t for t in tasks if t["id"] == id), None)
 
