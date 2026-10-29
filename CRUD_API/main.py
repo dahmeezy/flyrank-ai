@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException,status
 from pydantic import BaseModel
 import json
+import os
 
 app = FastAPI(
     version="1.0.0",
@@ -48,6 +49,7 @@ async def health():
 
 @app.get("/tasks")
 async def task():
+    tasks=load_tasks()
     return tasks
 
 @app.post("/tasks", status_code=status.HTTP_201_CREATED)
@@ -62,12 +64,11 @@ async def newTask(title:str):
     
     id = 0
 
-    with open("tasks.json", "r", encoding = "utf-8") as file:
-        content = json.load(file)
+    tasks=load_tasks()
 
 # when there is nothing in the json file, get the biggest ID there is
-        if content !=[]:
-            id= max([i["id"] for i in content])
+    if tasks !=[]:
+        id= max([i["id"] for i in tasks])
             
     nextId = id + 1
     nextTask={
@@ -76,13 +77,14 @@ async def newTask(title:str):
         "done": False
     }
 
-    content.append(nextTask)
-    with open("tasks.json", "w", encoding="utf-8") as file:
-        json.dump(content, file, indent=4)
+    tasks.append(nextTask)
+    save_tasks(tasks)
     return newTask
 
 @app.get("/tasks/{id}")
 async def oneTask(id:int):
+    tasks=load_tasks()
+
     task = next((t for t in tasks if t["id"] == id), None)
     
     if not task:
@@ -91,3 +93,58 @@ async def oneTask(id:int):
            detail={"error": f"Task {id} not found"}
        )
     return task
+
+@app.put("/tasks/{id}") 
+async def updateTask(id:int, title:str|None=None, done:bool|None=None ):
+    tasks=load_tasks()
+
+    task = next((t for t in tasks if t["id"] == id), None)
+
+    if not task:
+           raise HTTPException(
+               status_code=status.HTTP_404_NOT_FOUND,
+               detail={"error": f"Task {id} not found"}
+           )
+    elif title is not None and done is not None:
+         task["title"]=title
+         task["done"]=done
+    elif task is not None:
+         task["title"]=title
+    elif done is not None:
+        task["done"]=done
+    else:
+        raise HTTPException(
+             status_code=status.HTTP_400_BAD_REQUEST,
+             detail={"error": f"Send a title update or status update for task {id}"}
+        )
+    save_tasks(tasks)
+    return task
+
+@app.delete("/tasks/{id}")
+async def deleteTask(id:int,status_code=status.HTTP_204_NO_CONTENT):
+    tasks=load_tasks()
+    task = next((t for t in tasks if t["id"] == id), None)
+
+    if not task:
+               raise HTTPException(
+                   status_code=status.HTTP_404_NOT_FOUND,
+                   detail={"error": f"Task {id} not found"}
+               )
+    else:
+         # Delete the task by keeping everything else
+        updated_tasks = [t for t in tasks if t["id"] != id]
+        save_tasks(updated_tasks)
+    return f"Task {id} deleted."
+
+
+#helper functions
+
+def load_tasks(filepath="tasks.json"):
+     if not os.path.exists(filepath):
+          return[]
+     with open(filepath,"r") as file:
+          return json.load(file)
+
+def save_tasks(tasks, filepath="tasks.json"):
+    with open(filepath, "w") as file:
+        json.dump(tasks, file, indent=4)
