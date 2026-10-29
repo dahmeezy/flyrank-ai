@@ -1,7 +1,7 @@
 [project]
 name = "crud-api"
 version = "0.1.0"
-description = "Add your description here"
+description = "A CRUD API for tracking tasks"
 readme = "README.md"
 authors = [
     { name = "zaiyusuf", email = "zainaby1008@gmail.com" }

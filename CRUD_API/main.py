@@ -9,34 +9,14 @@ app = FastAPI(
     description="Crud operations"
 )
 
-tasks=[
-    # {
-    #     "id":1,
-    #     "title":"Read 2 pages of `Let's Go`",
-    #     "done":False
-    # },
-    # {
-    #     "id":2,
-    #     "title":"Do flyrank assignment",
-    #     "done":True
-    # },
-    # {
-    #     "id":3,
-    #     "title":"Resolve 10 github issues",
-    #     "done":False
-    # },
-]
 
-class Item(BaseModel):
-    id: int | None = None
-    title: str
-    done: bool | None = None
+class TaskCreate(BaseModel):
+    title: str | None=None
 
-    def __init__(self, id, title, done):
-        self.id = id
-        self.title = title
-        self.done = done
-
+class TaskUpdate(BaseModel):
+     title:str | None = None
+     done:bool | None = None
+    
 
 
 @app.get("/")
@@ -52,11 +32,11 @@ async def task():
     tasks=load_tasks()
     return tasks
 
-@app.post("/tasks", status_code=status.HTTP_201_CREATED)
-async def newTask(title:str):
+@app.post("/tasks", status_code=status.HTTP_201_CREATED,summary="Creates a new task.")
+async def newTask(body:TaskCreate):
 
     # user has to enter task title
-    if title == "":
+    if body.title is None or not body.title.strip():
         raise HTTPException(
                    status_code=status.HTTP_400_BAD_REQUEST,
                    detail={"error": "task has no title!"}
@@ -73,70 +53,76 @@ async def newTask(title:str):
     nextId = id + 1
     nextTask={
         "id": nextId,
-        "title": title,
+        "title": body.title,
         "done": False
     }
 
     tasks.append(nextTask)
     save_tasks(tasks)
-    return newTask
+    return nextTask
 
-@app.get("/tasks/{id}")
+@app.get("/tasks/{id}", summary="Displays a task with the specified ID.")
 async def oneTask(id:int):
     tasks=load_tasks()
 
     task = next((t for t in tasks if t["id"] == id), None)
     
-    if not task:
+    if task is None:
        raise HTTPException(
            status_code=status.HTTP_404_NOT_FOUND,
            detail={"error": f"Task {id} not found"}
        )
     return task
 
-@app.put("/tasks/{id}") 
-async def updateTask(id:int, title:str|None=None, done:bool|None=None ):
+@app.put("/tasks/{id}", summary="Updates a task.") 
+async def updateTask(id:int, body:TaskUpdate):
     tasks=load_tasks()
 
     task = next((t for t in tasks if t["id"] == id), None)
 
-    if not task:
+    if task is None:
            raise HTTPException(
                status_code=status.HTTP_404_NOT_FOUND,
                detail={"error": f"Task {id} not found"}
            )
-    if title is None and done is None:
+
+    if body.title is None and body.done is None:
         raise HTTPException(
-             status_code=status.HTTP_400_BAD_REQUEST,
-             detail={"error": f"Send a title update or status update for task {id}"}
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"error": f"Send a title update or status update for task {id}"}
+        )
+
+    if body.title is not None and not body.title.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"error": "title cannot be empty"}
         )
     
-    if title is not None:
-         task["title"]=title
+    if body.title is not None:
+         task["title"]=body.title
 
-    if done is not None:
-        task["done"] = done
+    if body.done is not None:
+        task["done"] = body.done
         
     
          
     save_tasks(tasks)
     return task
 
-@app.delete("/tasks/{id}", status_code=status.HTTP_204_NO_CONTENT)
+@app.delete("/tasks/{id}", status_code=status.HTTP_204_NO_CONTENT, summary="Deletes a task.")
 async def deleteTask(id:int):
     tasks=load_tasks()
     task = next((t for t in tasks if t["id"] == id), None)
 
-    if not task:
+    if task is None:
                raise HTTPException(
                    status_code=status.HTTP_404_NOT_FOUND,
                    detail={"error": f"Task {id} not found"}
                )
-    else:
-         # Delete the task by keeping everything else
-        updated_tasks = [t for t in tasks if t["id"] != id]
-        save_tasks(updated_tasks)
-    return f"Task {id} deleted."
+    # Delete the task by keeping everything else
+    updated_tasks = [t for t in tasks if t["id"] != id]
+    save_tasks(updated_tasks)
+    return
 
 
 #helper functions
