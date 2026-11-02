@@ -32,7 +32,9 @@ The API runs at http://127.0.0.1:8000 and the Swagger docs are at http://127.0.0
 | GET | `/health` | Check the server is alive | 200 | |
 | GET | `/tasks` | List all tasks | 200 | |
 | GET | `/tasks/{id}` | Get one task | 200 | 404 unknown id |
+| GET | `/stats` | Gives a stat of recorded tasks | 200 | |
 | POST | `/tasks` | Create a task (`{"title": "Buy milk"}`) | 201 | 400 missing or empty title |
+| POST | `/reset` | Restores the seed tasks  | 200 | |
 | PUT | `/tasks/{id}` | Update a task's `title` and/or `done` | 200 | 400 empty body or blank title, 404 unknown id |
 | DELETE | `/tasks/{id}` | Delete a task | 204 (empty body) | 404 unknown id |
 
@@ -77,3 +79,7 @@ All five task endpoints show up at `/docs`, and "Try it out" works for the full 
 **Delete**
 
 ![Delete a task](docs/swagger-delete.png)
+
+#### Observation
+
+I got all the tasks from before after restarting the server. The server has a persistent storage. I used a JSON file as it database and it gets loaded before any of the handlers handles any route.

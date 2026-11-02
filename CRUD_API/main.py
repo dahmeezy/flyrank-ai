@@ -9,6 +9,25 @@ app = FastAPI(
     description="Crud operations"
 )
 
+SEED_TASKS = [
+     {
+        "id": 1,
+        "title": "Exercise",
+        "done": True
+    },
+    {
+        "id": 2,
+        "title": "Build a CRUD API",
+        "done": True
+    },
+    
+    {
+        "id": 3,
+        "title": "Read 'Let's go' by Alex Edward",
+        "done": False
+    }
+]
+
 
 class TaskCreate(BaseModel):
     title: str | None=None
@@ -17,20 +36,39 @@ class TaskUpdate(BaseModel):
      title:str | None = None
      done:bool | None = None
     
+#helper functions
+
+def load_tasks(filepath="tasks.json"):
+     if not os.path.exists(filepath):
+          return[]
+     with open(filepath,"r") as file:
+          return json.load(file)
+
+def save_tasks(tasks, filepath="tasks.json"):
+    with open(filepath, "w") as file:
+        json.dump(tasks, file, indent=4)
 
 
-@app.get("/")
+@app.get("/", summary="Describes my API.")
 async def root():
     return {"name": "Task API", "version":"1.0", "endpoints":["/tasks"]}
 
-@app.get("/health")
+@app.get("/health", summary="Checks that server.")
 async def health():
     return {"status":"ok"}
 
-@app.get("/tasks")
-async def task():
+@app.get("/tasks",summary="Displays all recorded tasks.")
+async def task(done: bool | None = None, search: str | None = None):
     tasks=load_tasks()
-    return tasks
+    result =tasks
+
+    if done is not None:
+        result =[t for t in result if t["done"] == done]
+    if search is not None:
+        result = [t for t in result if search.lower() in t["title"].lower() ]
+    return result
+
+    
 
 @app.post("/tasks", status_code=status.HTTP_201_CREATED,summary="Creates a new task.")
 async def newTask(body:TaskCreate):
@@ -124,15 +162,19 @@ async def deleteTask(id:int):
     save_tasks(updated_tasks)
     return
 
+@app.get("/stats", summary="Gives a stat of the total number of tasks, pending one and completed ones.")
+async def stat():
+     tasks=load_tasks()
+     total=len(tasks)
+     done =[t for t in tasks if t["done"]==True]
+     donee = len(done)
+     pending = total-donee
+     print(tasks)
+     return {"total":total,
+             "done":donee,
+             "open":pending}
 
-#helper functions
-
-def load_tasks(filepath="tasks.json"):
-     if not os.path.exists(filepath):
-          return[]
-     with open(filepath,"r") as file:
-          return json.load(file)
-
-def save_tasks(tasks, filepath="tasks.json"):
-    with open(filepath, "w") as file:
-        json.dump(tasks, file, indent=4)
+@app.post("/reset", summary="Restores the seed tasks.")
+async def reset():
+     save_tasks(SEED_TASKS)
+     return SEED_TASKS
