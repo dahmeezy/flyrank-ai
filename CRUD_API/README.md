@@ -83,3 +83,18 @@ All five task endpoints show up at `/docs`, and "Try it out" works for the full 
 #### Observation
 
 I got all the tasks from before after restarting the server. The server has a persistent storage. I used a JSON file as it database and it gets loaded before any of the handlers handles any route.
+
+
+### AI vs me
+
+#### my prompt
+
+I need you to build a CRUD API for recording tasks in python using fastapi,  with endpoints :get /, post /tasks, post /tasks/:id f no task has that id, return status 404 with a JSON error: `{ "error": "Task 99 not found" } `, put /tasks/:id Returns the updated task. Unknown id → `404` . Empty/invalid body → `400`, delete /tasks/:id Return status 204 ("No Content" — success, nothing to say) with an empty body. Unknown id → `404` . make it so that the swagger UI clearly describes the endpoints that were built.
+
+
+
+- Claude's description of the endpoints on swagger UI is cleaner. It handled errors and status code different than I thought. It does not persist and i idont understand its version.
+
+- It silently ignores the json error that i specified for it to output when a task that someone is trying to retrieve does not exist.
+
+- I forgot to specify that it should do it in the simplest/basic way. I think it assumed I'm already good at this and did it the standard way.
