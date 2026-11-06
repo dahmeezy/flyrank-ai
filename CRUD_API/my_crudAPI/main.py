@@ -1,7 +1,35 @@
 from fastapi import FastAPI, HTTPException,status
 from pydantic import BaseModel
+import sqlite3
 import json
 import os
+
+# Database
+
+def create_task_table():
+     conn =sqlite3.connect("tasks.db")
+     cur = conn.cursor()
+     cur.execute(create_table_query)
+     conn.commit()
+     conn.close()
+
+def seed_tasks_if_empty():
+     conn = sqlite3.connect("tasks.db")
+     cur = conn.cursor()
+     cur.execute("SELECT COUNT(*) FROM tasks")
+     count = cur.fetchone()[0]
+     if count == 0:
+          sql ="INSERT INTO tasks (id, title, done) VALUES (:id, :title, :done)"
+          cur.executemany(sql,SEED_TASKS)
+     conn.commit()
+     conn.close()
+
+# create table
+create_table_query ="""
+CREATE TABLE IF NOT EXISTS tasks(
+    id INTEGER PRIMARY KEY,
+    title TEXT NOT NULL,
+    done BOOLEAN)"""
 
 app = FastAPI(
     version="1.0.0",
@@ -29,6 +57,7 @@ SEED_TASKS = [
 ]
 
 
+
 class TaskCreate(BaseModel):
     title: str | None=None
 
@@ -48,6 +77,9 @@ def save_tasks(tasks, filepath="tasks.json"):
     with open(filepath, "w") as file:
         json.dump(tasks, file, indent=4)
 
+
+create_task_table()
+seed_tasks_if_empty()
 
 @app.get("/", summary="Describes my API.")
 async def root():
