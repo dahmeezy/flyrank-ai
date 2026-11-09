@@ -24,6 +24,32 @@ def seed_tasks_if_empty():
      conn.commit()
      conn.close()
 
+def get_all_tasks():
+    conn = sqlite3.connect("tasks.db")
+    cur = conn.cursor()
+    cur.execute("SELECT id, title, done FROM tasks")
+    columns = cur.fetchall()
+    conn.close()
+
+    tasks =[]
+
+    for column in columns:
+         tasks.append({"id":column[0], "title":column[1], "done":bool(column[2])})
+    return tasks
+
+
+def get_one_task(id:int):
+     conn = sqlite3.connect("tasks.db")
+     cur = conn.cursor()
+     cur.execute("SELECT id, title,done FROM tasks WHERE id=?",(id,))
+     column = cur.fetchone()
+     conn.close()
+
+     if column is None:
+          return None         
+     return {"id":column[0], "title":column[1],"done":bool(column[2])}
+
+
 # create table
 create_table_query ="""
 CREATE TABLE IF NOT EXISTS tasks(
@@ -91,7 +117,7 @@ async def health():
 
 @app.get("/tasks",summary="Displays all recorded tasks.")
 async def task(done: bool | None = None, search: str | None = None):
-    tasks=load_tasks()
+    tasks=get_all_tasks()
     result =tasks
 
     if done is not None:
@@ -133,16 +159,14 @@ async def newTask(body:TaskCreate):
 
 @app.get("/tasks/{id}", summary="Displays a task with the specified ID.")
 async def oneTask(id:int):
-    tasks=load_tasks()
-
-    task = next((t for t in tasks if t["id"] == id), None)
+    tasks=get_one_task(id)
     
-    if task is None:
+    if tasks is None:
        raise HTTPException(
            status_code=status.HTTP_404_NOT_FOUND,
            detail={"error": f"Task {id} not found"}
        )
-    return task
+    return tasks
 
 @app.put("/tasks/{id}", summary="Updates a task.") 
 async def updateTask(id:int, body:TaskUpdate):
