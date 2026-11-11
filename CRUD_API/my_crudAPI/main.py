@@ -50,6 +50,19 @@ def get_one_task(id:int):
      return {"id":column[0], "title":column[1],"done":bool(column[2])}
 
 
+def add_task(title:str):
+     conn =sqlite3.connect("tasks.db")
+     cur = conn.cursor()
+     cur.execute("INSERT INTO tasks (title, done) VALUES (?,?)",(title,False))
+     lastId=cur.lastrowid
+     conn.commit()
+     conn.close()
+
+     return {"id":lastId,"title":title, "done":False}
+
+     
+
+
 # create table
 create_table_query ="""
 CREATE TABLE IF NOT EXISTS tasks(
@@ -138,24 +151,24 @@ async def newTask(body:TaskCreate):
                    detail={"error": "task has no title!"}
                )
     
-    id = 0
+    # id = 0
 
-    tasks=load_tasks()
+    tasks=add_task(body.title)
 
 # when there is nothing in the json file, get the biggest ID there is
-    if tasks !=[]:
-        id= max([i["id"] for i in tasks])
+    # if tasks !=[]:
+    #     id= max([i["id"] for i in tasks])
             
-    nextId = id + 1
-    nextTask={
-        "id": nextId,
-        "title": body.title,
-        "done": False
-    }
+    # nextId = id + 1
+    # nextTask={
+    #     "id": nextId,
+    #     "title": body.title,
+    #     "done": False
+    # }
 
-    tasks.append(nextTask)
-    save_tasks(tasks)
-    return nextTask
+    # tasks.append(nextTask)
+    # save_tasks(tasks)
+    return tasks
 
 @app.get("/tasks/{id}", summary="Displays a task with the specified ID.")
 async def oneTask(id:int):
