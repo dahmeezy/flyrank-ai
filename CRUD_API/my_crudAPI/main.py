@@ -60,7 +60,19 @@ def add_task(title:str):
 
      return {"id":lastId,"title":title, "done":False}
 
-     
+def update_task(id:int,title:str, done:bool):
+     conn=sqlite3.connect("tasks.db")
+     cur =conn.cursor()
+     cur.execute("UPDATE tasks SET title = ?, done = ? WHERE id = ?", (title,done, id))
+     conn.commit()
+     conn.close()
+
+def delete_task(id:int):
+     conn = sqlite3.connect("tasks.db")
+     cur = conn.cursor()
+     cur.execute("DELETE FROM tasks WHERE id = ?",(id,))
+     conn.commit()
+     conn.close()
 
 
 # create table
@@ -183,9 +195,11 @@ async def oneTask(id:int):
 
 @app.put("/tasks/{id}", summary="Updates a task.") 
 async def updateTask(id:int, body:TaskUpdate):
-    tasks=load_tasks()
+    # tasks=load_tasks()
 
-    task = next((t for t in tasks if t["id"] == id), None)
+    # task = next((t for t in tasks if t["id"] == id), None)
+
+    task = get_one_task(id)
 
     if task is None:
            raise HTTPException(
@@ -213,13 +227,14 @@ async def updateTask(id:int, body:TaskUpdate):
         
     
          
-    save_tasks(tasks)
+    # save_tasks(tasks)
+    update_task(id,task["title"], task["done"])
     return task
 
 @app.delete("/tasks/{id}", status_code=status.HTTP_204_NO_CONTENT, summary="Deletes a task.")
 async def deleteTask(id:int):
-    tasks=load_tasks()
-    task = next((t for t in tasks if t["id"] == id), None)
+    # tasks=load_tasks()
+    # task = next((t for t in tasks if t["id"] == id), None)
 
     if task is None:
                raise HTTPException(
@@ -227,8 +242,9 @@ async def deleteTask(id:int):
                    detail={"error": f"Task {id} not found"}
                )
     # Delete the task by keeping everything else
-    updated_tasks = [t for t in tasks if t["id"] != id]
-    save_tasks(updated_tasks)
+    # updated_tasks = [t for t in tasks if t["id"] != id]
+    # save_tasks(updated_tasks)
+    delete_task(id)
     return
 
 @app.get("/stats", summary="Gives a stat of the total number of tasks, pending one and completed ones.")
