@@ -24,6 +24,7 @@ def seed_tasks_if_empty():
      conn.commit()
      conn.close()
 
+
 def get_all_tasks():
     conn = sqlite3.connect("tasks.db")
     cur = conn.cursor()
@@ -116,18 +117,6 @@ class TaskUpdate(BaseModel):
      title:str | None = None
      done:bool | None = None
     
-#helper functions
-
-def load_tasks(filepath="tasks.json"):
-     if not os.path.exists(filepath):
-          return[]
-     with open(filepath,"r") as file:
-          return json.load(file)
-
-def save_tasks(tasks, filepath="tasks.json"):
-    with open(filepath, "w") as file:
-        json.dump(tasks, file, indent=4)
-
 
 create_task_table()
 seed_tasks_if_empty()
@@ -162,24 +151,9 @@ async def newTask(body:TaskCreate):
                    status_code=status.HTTP_400_BAD_REQUEST,
                    detail={"error": "task has no title!"}
                )
-    
-    # id = 0
 
     tasks=add_task(body.title)
 
-# when there is nothing in the json file, get the biggest ID there is
-    # if tasks !=[]:
-    #     id= max([i["id"] for i in tasks])
-            
-    # nextId = id + 1
-    # nextTask={
-    #     "id": nextId,
-    #     "title": body.title,
-    #     "done": False
-    # }
-
-    # tasks.append(nextTask)
-    # save_tasks(tasks)
     return tasks
 
 @app.get("/tasks/{id}", summary="Displays a task with the specified ID.")
@@ -195,9 +169,6 @@ async def oneTask(id:int):
 
 @app.put("/tasks/{id}", summary="Updates a task.") 
 async def updateTask(id:int, body:TaskUpdate):
-    # tasks=load_tasks()
-
-    # task = next((t for t in tasks if t["id"] == id), None)
 
     task = get_one_task(id)
 
@@ -233,23 +204,19 @@ async def updateTask(id:int, body:TaskUpdate):
 
 @app.delete("/tasks/{id}", status_code=status.HTTP_204_NO_CONTENT, summary="Deletes a task.")
 async def deleteTask(id:int):
-    # tasks=load_tasks()
-    # task = next((t for t in tasks if t["id"] == id), None)
-
+  
     if task is None:
                raise HTTPException(
                    status_code=status.HTTP_404_NOT_FOUND,
                    detail={"error": f"Task {id} not found"}
                )
-    # Delete the task by keeping everything else
-    # updated_tasks = [t for t in tasks if t["id"] != id]
-    # save_tasks(updated_tasks)
+    
     delete_task(id)
     return
 
 @app.get("/stats", summary="Gives a stat of the total number of tasks, pending one and completed ones.")
 async def stat():
-     tasks=load_tasks()
+     tasks=get_all_tasks()
      total=len(tasks)
      done =[t for t in tasks if t["done"]==True]
      donee = len(done)
@@ -261,5 +228,5 @@ async def stat():
 
 @app.post("/reset", summary="Restores the seed tasks.")
 async def reset():
-     save_tasks(SEED_TASKS)
-     return SEED_TASKS
+     tasks = seed_tasks_if_empty()
+     return 
