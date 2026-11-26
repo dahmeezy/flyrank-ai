@@ -130,7 +130,7 @@ async def health():
     return {"status":"ok"}
 
 @app.get("/tasks",summary="Displays all recorded tasks.")
-async def task(done: bool | None = None, search: str | None = None):
+def task(done: bool | None = None, search: str | None = None):
     tasks=get_all_tasks()
     result =tasks
 
@@ -143,7 +143,7 @@ async def task(done: bool | None = None, search: str | None = None):
     
 
 @app.post("/tasks", status_code=status.HTTP_201_CREATED,summary="Creates a new task.")
-async def newTask(body:TaskCreate):
+def newTask(body:TaskCreate):
 
     # user has to enter task title
     if body.title is None or not body.title.strip():
@@ -157,7 +157,7 @@ async def newTask(body:TaskCreate):
     return tasks
 
 @app.get("/tasks/{id}", summary="Displays a task with the specified ID.")
-async def oneTask(id:int):
+def oneTask(id:int):
     tasks=get_one_task(id)
     
     if tasks is None:
@@ -168,7 +168,7 @@ async def oneTask(id:int):
     return tasks
 
 @app.put("/tasks/{id}", summary="Updates a task.") 
-async def updateTask(id:int, body:TaskUpdate):
+def updateTask(id:int, body:TaskUpdate):
 
     task = get_one_task(id)
 
@@ -203,7 +203,7 @@ async def updateTask(id:int, body:TaskUpdate):
     return task
 
 @app.delete("/tasks/{id}", status_code=status.HTTP_204_NO_CONTENT, summary="Deletes a task.")
-async def deleteTask(id:int):
+def deleteTask(id:int):
   
     if task is None:
                raise HTTPException(
@@ -215,7 +215,7 @@ async def deleteTask(id:int):
     return
 
 @app.get("/stats", summary="Gives a stat of the total number of tasks, pending one and completed ones.")
-async def stat():
+def stat():
      tasks=get_all_tasks()
      total=len(tasks)
      done =[t for t in tasks if t["done"]==True]
@@ -227,6 +227,6 @@ async def stat():
              "open":pending}
 
 @app.post("/reset", summary="Restores the seed tasks.")
-async def reset():
+def reset():
      tasks = seed_tasks_if_empty()
-     return 
+     return tasks
